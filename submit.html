@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Start a Clinical Skin Screening | Skin Triage</title>
+  <meta name="description" content="Upload photos of a concerning skin spot and answer brief clinical questions to receive personal triage evaluation by a licensed healthcare professional." />
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="stylesheet" href="index.css" />
+  <style>
+    .submit-container {
+      max-width: 1040px;
+      margin: 2.5rem auto 4rem auto;
+      padding: 0 1.5rem;
+    }
+    .stepper-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+    .stepper-progress-bg {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--border-light);
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+    .stepper-progress-active {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 25%;
+      height: 3px;
+      background: var(--brand-teal-500);
+      transform: translateY(-50%);
+      z-index: 2;
+      transition: width 0.3s ease;
+    }
+    .stepper-step {
+      position: relative;
+      z-index: 3;
+      background: #FFFFFF;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 2px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      transition: all 0.25s ease;
+    }
+    .stepper-step.active {
+      border-color: var(--brand-teal-500);
+      background: var(--brand-teal-500);
+      color: #FFFFFF;
+      box-shadow: 0 0 0 4px rgba(0, 168, 150, 0.2);
+    }
+    .stepper-step.completed {
+      border-color: var(--brand-teal-500);
+      background: #FFFFFF;
+      color: var(--brand-teal-500);
+    }
+    .form-step-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem;
+      box-shadow: var(--shadow-md);
+    }
+    .upload-dropzone {
+      border: 2px dashed var(--brand-teal-500);
+      background: var(--brand-cyan-50);
+      border-radius: var(--radius-md);
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .upload-dropzone:hover {
+      background: rgba(0, 168, 150, 0.1);
+      border-color: var(--brand-teal-600);
+    }
+    .preview-thumbs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 1rem;
+      margin-top: 1.25rem;
+    }
+    .preview-thumb {
+      aspect-ratio: 1;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      border: 1px solid var(--border-light);
+      position: relative;
+    }
+    .preview-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .remove-thumb-btn {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: rgba(0,0,0,0.65);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    /* Body Map Selector */
+    .body-map-controls {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+    .body-map-frame {
+      max-width: 280px;
+      margin: 0 auto;
+      position: relative;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      text-align: center;
+      cursor: crosshair;
+    }
+    .body-map-img {
+      max-height: 380px;
+      margin: 0 auto;
+      user-select: none;
+    }
+    .body-marker-pin {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #EF4444;
+      border: 3px solid #FFFFFF;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      animation: pulseMarker 1.5s infinite;
+    }
+    @media (max-width: 640px) {
+      .submit-container {
+        padding: 0 1rem;
+        margin: 1.25rem auto 3rem auto;
+      }
+      .form-step-card {
+        padding: 1.5rem 1rem;
+      }
+      .submit-mobile-hide {
+        display: none !important;
+      }
+      .stepper-header {
+        margin-bottom: 1.5rem;
+      }
+      .stepper-step {
+        width: 32px;
+        height: 32px;
+        font-size: 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body style="background: var(--bg-subtle);">
+
+  <!-- Minimal Clinical Header -->
+  <header style="background: #FFFFFF; border-bottom: 1px solid var(--border-light); padding: 0.65rem 1rem;">
+    <div class="container" style="display:flex; justify-content:space-between; align-items:center;">
+      <a href="/" style="display:flex; align-items:center; gap:0.5rem;">
+        <img src="assets/logo.png" alt="Skin Triage" style="height:36px; width:auto;" />
+      </a>
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <span class="clinical-pill submit-mobile-hide" style="font-size:0.75rem;">
+          <span class="status-dot"></span>
+          256-Bit Encrypted &amp; HIPAA Compliant
+        </span>
+        <a href="/" class="btn-ghost" style="font-size:0.825rem; padding:0.4rem 0.75rem;">✕ Exit</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="submit-container">
+    <div style="text-align:center; margin-bottom:2rem;">
+      <h1 style="font-size:2.25rem; color:var(--brand-navy-900); margin-bottom:0.5rem;">Clinical Skin Spot Screening</h1>
+      <p style="color:var(--text-secondary); font-size:1rem;">
+        Confidential review performed by a licensed healthcare professional licensed in your state.
+      </p>
+    </div>
+
+    <!-- Stepper Navigation -->
+    <div class="stepper-header">
+      <div class="stepper-progress-bg"></div>
+      <div class="stepper-progress-active" id="stepper-bar"></div>
+      <div class="stepper-step active" id="step-dot-1">1</div>
+      <div class="stepper-step" id="step-dot-2">2</div>
+      <div class="stepper-step" id="step-dot-3">3</div>
+      <div class="stepper-step" id="step-dot-4">4</div>
+    </div>
+
+    <form id="screening-workflow" onsubmit="event.preventDefault();">
+
+      <!-- STEP 1: PHOTO UPLOAD -->
+      <section class="form-step-card" id="form-step-1">
+        <h2 style="font-size:1.4rem; color:var(--brand-navy-900); margin-bottom:0.5rem;">Step 1: Upload Spot Photos</h2>
+        <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:1.5rem;">
+          We recommend 2–3 clear photos taken in natural daylight (one macro close-up of the border/pigment, and one wider orientation shot).
+        </p>
+
+        <div class="upload-dropzone" id="dropzone" onclick="document.getElementById('photo-input').click();">
+          <input type="file" id="photo-input" accept="image/*" multiple style="display:none;" onchange="handlePhotoUpload(event)" />
+          <svg width="44" height="44" color="var(--brand-teal-500)" style="margin:0 auto 0.75rem auto;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <h4 style="font-size:1.05rem; color:var(--brand-navy-900); margin-bottom:0.25rem;">Click or Drag Photos Here</h4>
+          <p style="font-size:0.8rem; color:var(--text-muted);">Supports JPG, PNG, HEIC up to 25MB each</p>
+        </div>
+
+        <div class="preview-thumbs-grid" id="preview-grid">
+          <!-- Thumbnail previews added via JS -->
+        </div>
+
+        <div style="margin-top:2rem; display:flex; justify-content:flex-end;">
+          <button type="button" class="btn-primary" onclick="goToStep(2)">
+            Continue to Anatomical Location →
+          </button>
+        </div>
+      </section>
+
+      <!-- STEP 2: BODY MAP LOCATION -->
+      <section class="form-step-card" id="form-step-2" style="display:none;">
+        <h2 style="font-size:1.4rem; color:var(--brand-navy-900); margin-bottom:0.5rem;">Step 2: Where Is This Spot Located?</h2>
+        <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:1.25rem;">
+          Select anatomical view, then click on the body diagram to place a pinpoint marker.
+        </p>
+
+        <div class="body-map-controls">
+          <button type="button" class="btn-secondary" id="btn-map-m-front" onclick="switchBodyMap('body_front.png', this)">Front View</button>
+          <button type="button" class="btn-secondary" id="btn-map-m-back" onclick="switchBodyMap('body_back.png', this)">Back View</button>
+          <button type="button" class="btn-secondary" id="btn-map-f-front" onclick="switchBodyMap('body_female_front.png', this)">Female Front</button>
+          <button type="button" class="btn-secondary" id="btn-map-f-back" onclick="switchBodyMap('body_female_back.png', this)">Female Back</button>
+        </div>
+
+        <div class="body-map-frame" id="body-map-canvas" onclick="placeMarker(event)">
+          <img src="assets/body_front.png" alt="Body Map Diagram" class="body-map-img" id="body-map-active-img" />
+          <div id="pinpoint-marker" style="display:none;" class="body-marker-pin"></div>
+        </div>
+
+        <div class="form-group" style="margin-top:1.5rem;">
+          <label class="form-label" for="spot-location-text">Or Describe Specific Location in Words</label>
+          <input type="text" id="spot-location-text" class="form-input" placeholder="e.g. Left upper shoulder, below collarbone, right forearm..." />
+        </div>
+
+        <div style="margin-top:2rem; display:flex; justify-content:space-between;">
+          <button type="button" class="btn-secondary" onclick="goToStep(1)">← Back</button>
+          <button type="button" class="btn-primary" onclick="goToStep(3)">Continue to Clinical Symptoms →</button>
+        </div>
+      </section>
+
+      <!-- STEP 3: CLINICAL SYMPTOMS & HISTORY -->
+      <section class="form-step-card" id="form-step-3" style="display:none;">
+        <h2 style="font-size:1.4rem; color:var(--brand-navy-900); margin-bottom:0.5rem;">Step 3: Clinical History &amp; Symptoms</h2>
+        <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:1.5rem;">
+          Providing health context helps the reviewing clinician deliver precise guidance.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">How long have you noticed this spot?</label>
+          <select class="form-select" id="spot-duration">
+            <option value="new">Appeared within the last few weeks</option>
+            <option value="months">Present for 1–6 months</option>
+            <option value="year">Present for over a year</option>
+            <option value="lifelong">Lifelong mole that recently started changing</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Are you experiencing any of the following? (Check all that apply)</label>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.65rem; margin-top:0.5rem;">
+            <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.875rem;">
+              <input type="checkbox" name="symptom" value="itching" /> Itching or burning sensation
+            </label>
+            <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.875rem;">
+              <input type="checkbox" name="symptom" value="bleeding" /> Spontaneous bleeding or crusting
+            </label>
+            <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.875rem;">
+              <input type="checkbox" name="symptom" value="growing" /> Noticeable growth in size or height
+            </label>
+            <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.875rem;">
+              <input type="checkbox" name="symptom" value="darkening" /> Darkening or color irregularities
+            </label>
+            <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.875rem;">
+              <input type="checkbox" name="symptom" value="nonhealing" /> Non-healing sore or ulcer
+            </label>
+            <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.875rem;">
+              <input type="checkbox" name="symptom" value="family_history" /> Personal or family history of skin cancer
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="additional-notes">Additional Clinical Observations</label>
+          <textarea id="additional-notes" class="form-textarea" rows="3" placeholder="Tell the doctor anything else you've noticed or any specific questions you have..."></textarea>
+        </div>
+
+        <div style="margin-top:2rem; display:flex; justify-content:space-between;">
+          <button type="button" class="btn-secondary" onclick="goToStep(2)">← Back</button>
+          <button type="button" class="btn-primary" onclick="goToStep(4)">Continue to Contact &amp; Review →</button>
+        </div>
+      </section>
+
+      <!-- STEP 4: PATIENT CONTACT & SECURE SUBMISSION -->
+      <section class="form-step-card" id="form-step-4" style="display:none;">
+        <h2 style="font-size:1.4rem; color:var(--brand-navy-900); margin-bottom:0.5rem;">Step 4: Delivery &amp; Verification</h2>
+        <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:1.5rem;">
+          Your review results and clinician guidance will be securely dispatched to this address.
+        </p>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+          <div class="form-group">
+            <label class="form-label" for="patient-first-name">First Name</label>
+            <input type="text" id="patient-first-name" class="form-input" required placeholder="Jane" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="patient-last-name">Last Name</label>
+            <input type="text" id="patient-last-name" class="form-input" required placeholder="Doe" />
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+          <div class="form-group">
+            <label class="form-label" for="patient-email-submit">Email Address (for Results)</label>
+            <input type="email" id="patient-email-submit" class="form-input" required placeholder="jane@example.com" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="patient-state">State of Residence</label>
+            <select class="form-select" id="patient-state" required>
+              <option value="">Select State (for licensed provider matching)</option>
+              <option value="CA">California</option>
+              <option value="NY">New York</option>
+              <option value="FL">Florida</option>
+              <option value="TX">Texas</option>
+              <option value="IL">Illinois</option>
+              <option value="PA">Pennsylvania</option>
+              <option value="OH">Ohio</option>
+              <option value="GA">Georgia</option>
+              <option value="NC">North Carolina</option>
+              <option value="MI">Michigan</option>
+              <option value="OTHER">Other US State</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- HIPAA & Consent Checkboxes -->
+        <div style="background:var(--bg-subtle); border:1px solid var(--border-light); border-radius:var(--radius-md); padding:1rem; margin-top:1rem; font-size:0.8rem; color:var(--text-secondary); space-y-2;">
+          <label style="display:flex; align-items:flex-start; gap:0.5rem; margin-bottom:0.5rem;">
+            <input type="checkbox" id="consent-triage" required checked style="margin-top:0.25rem;" />
+            <span>I understand this is a clinical triage review by an independent licensed healthcare professional to evaluate risk and recommend next steps, and is not a histological diagnosis or replacement for 911 emergency care.</span>
+          </label>
+          <label style="display:flex; align-items:flex-start; gap:0.5rem;">
+            <input type="checkbox" id="consent-privacy" required checked style="margin-top:0.25rem;" />
+            <span>I agree to the <a href="/terms" target="_blank" style="color:var(--brand-teal-600); text-decoration:underline;">Terms of Service</a> and <a href="/privacy" target="_blank" style="color:var(--brand-teal-600); text-decoration:underline;">HIPAA Privacy Practices</a>.</span>
+          </label>
+        </div>
+
+        <div style="margin-top:2rem; display:flex; justify-content:space-between; align-items:center;">
+          <button type="button" class="btn-secondary" onclick="goToStep(3)">← Back</button>
+          <button type="button" class="btn-primary" style="padding:0.85rem 2rem; font-size:1rem;" onclick="submitScreeningForm()">
+            Submit for Clinical Review →
+          </button>
+        </div>
+      </section>
+
+      <!-- CONFIRMATION SUCCESS VIEW -->
+      <section class="form-step-card" id="form-step-success" style="display:none; text-align:center; padding:3.5rem 2rem;">
+        <div style="width:64px; height:64px; border-radius:50%; background:var(--brand-cyan-50); color:var(--brand-teal-500); display:flex; align-items:center; justify-content:center; margin:0 auto 1.5rem auto;">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2 style="font-size:2rem; color:var(--brand-navy-900); margin-bottom:0.75rem;">Screening Received Successfully</h2>
+        <p style="color:var(--text-secondary); font-size:1.05rem; max-width:540px; margin:0 auto 1.5rem auto;">
+          Your photos and clinical history have been encrypted and queued for clinical review by a state-licensed dermatology professional.
+        </p>
+
+        <div style="background:var(--bg-subtle); border:1px solid var(--border-clinical); border-radius:var(--radius-md); padding:1.25rem; max-width:380px; margin:0 auto 2rem auto;">
+          <span style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); font-weight:700;">Your Unique Request ID</span>
+          <div style="font-size:1.75rem; font-weight:800; color:var(--brand-navy-900); font-family:monospace; margin-top:0.25rem;" id="generated-request-id">ST-9502</div>
+          <small style="color:var(--text-muted); font-size:0.75rem;">A confirmation email has also been sent to your inbox.</small>
+        </div>
+
+        <div style="display:flex; justify-content:center; gap:1rem;">
+          <a href="/my-screenings" class="btn-primary">View Status in Patient Portal</a>
+          <a href="/" class="btn-secondary">Return to Home</a>
+        </div>
+      </section>
+
+    </form>
+  </main>
+
+  <script>
+    let currentStep = 1;
+
+    function goToStep(step) {
+      document.querySelectorAll('.form-step-card').forEach(c => c.style.display = 'none');
+      document.getElementById(`form-step-${step}`).style.display = 'block';
+
+      // Update dots
+      for (let i = 1; i <= 4; i++) {
+        const dot = document.getElementById(`step-dot-${i}`);
+        if (i < step) {
+          dot.className = 'stepper-step completed';
+          dot.innerHTML = '✓';
+        } else if (i === step) {
+          dot.className = 'stepper-step active';
+          dot.innerHTML = i;
+        } else {
+          dot.className = 'stepper-step';
+          dot.innerHTML = i;
+        }
+      }
+      const progressWidths = { 1: '15%', 2: '45%', 3: '75%', 4: '100%' };
+      document.getElementById('stepper-bar').style.width = progressWidths[step] || '15%';
+      window.scrollTo({ top: 100, behavior: 'smooth' });
+    }
+
+    function handlePhotoUpload(e) {
+      const files = e.target.files;
+      const grid = document.getElementById('preview-grid');
+      Array.from(files).forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          const div = document.createElement('div');
+          div.className = 'preview-thumb';
+          div.innerHTML = `
+            <img src="${evt.target.result}" alt="Spot photo" />
+            <button type="button" class="remove-thumb-btn" onclick="this.parentElement.remove()">✕</button>
+          `;
+          grid.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function switchBodyMap(imageName, btn) {
+      document.getElementById('body-map-active-img').src = `assets/${imageName}`;
+      document.querySelectorAll('.body-map-controls button').forEach(b => {
+        b.className = 'btn-secondary';
+      });
+      btn.className = 'btn-primary';
+    }
+
+    function placeMarker(e) {
+      const frame = document.getElementById('body-map-canvas');
+      const rect = frame.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const pin = document.getElementById('pinpoint-marker');
+      pin.style.left = `${x}px`;
+      pin.style.top = `${y}px`;
+      pin.style.display = 'block';
+    }
+
+    async function submitScreeningForm() {
+      const reqId = 'ST-' + Math.floor(1000 + Math.random() * 9000);
+      document.getElementById('generated-request-id').textContent = reqId;
+
+      document.querySelectorAll('.form-step-card').forEach(c => c.style.display = 'none');
+      document.getElementById('form-step-success').style.display = 'block';
+      document.getElementById('stepper-bar').style.width = '100%';
+    }
+  </script>
+</body>
+</html>

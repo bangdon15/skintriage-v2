@@ -1,0 +1,13 @@
+{
+  "name": "skintriage-clinical-platform",
+  "version": "2.0.0",
+  "description": "Hospital-grade skin cancer triage and telehealth screening platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.22.3"
+  }
+}
